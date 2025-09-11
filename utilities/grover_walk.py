@@ -1,3 +1,33 @@
+#------------------------------------------------------------------------------
+# grover_walk.py
+#
+# This module implements a unified circuit framework where Grover's algorithm 
+# is expressed as a coined quantum walk. It provides building blocks for the 
+# Grover diffusion operator, oracle construction, shift operator, and a full 
+# coined Grover-walk search routine. An execution helper is also included to 
+# run the walk circuit and extract position-register statistics.
+#
+# Functions included:
+# - grover_diffusion_gate(n): Constructs the Grover diffusion operator.
+# - phase_oracle_on_register(n_total, pos_start, pos_len, marked_bitstring): 
+#   Builds a phase-flip oracle marking the solution state.
+# - flipflop_shift_swap(n, coin_start, pos_start): Implements the flip-flop 
+#   shift as SWAP operations between coin and position registers.
+# - coined_grover_walk_search(n, marked_state, steps=None, measure=True): 
+#   Builds the coined Grover-walk search circuit.
+# - run_walk_and_get_position_counts(n, marked_state, backend=None, shots=2048): 
+#   Executes the walk circuit and returns measurement counts for the position 
+#   register.
+#
+# These functions support experiments in quantum search, cryptanalysis 
+# (e.g., Caesar’s cipher key recovery), and analysis of Grover vs. quantum 
+# walk formulations in both fault-tolerant and NISQ settings.
+#
+# © Leonardo Lavagna 2025
+# @ NESYA https://github.com/NesyaLab
+#------------------------------------------------------------------------------
+
+
 from qiskit import QuantumCircuit, transpile
 from qiskit.result import marginal_counts
 from qiskit.circuit.library import MCXGate, SwapGate
@@ -5,7 +35,14 @@ import numpy as np
 
 
 def grover_diffusion_gate(n):
-    """Grover diffuser on n qubits (reflection about uniform superposition |s>."""
+    """Constructs the Grover diffusion operator on n qubits.
+
+    Args:
+        n (int): Number of qubits.
+
+    Returns:
+        qiskit.circuit.Gate: Grover diffusion gate.
+    """
     qc = QuantumCircuit(n)
     qc.h(range(n))
     qc.x(range(n))
@@ -22,18 +59,16 @@ def grover_diffusion_gate(n):
 
 
 def phase_oracle_on_register(n_total, pos_start, pos_len, marked_bitstring):
-    """
-    Phase-flip oracle that acts only on the position register and marks the
-    solution state.
+    """Constructs a phase-flip oracle acting on the position register.
 
-    Args: 
-      n_total (int): total qubits in the circuit
-      pos_start (int): starting index of position register in the circuit
-      pos_len (int): number of qubits in the position register
-      marked_bitstring (str): e.g. '101'
+    Args:
+        n_total (int): Total number of qubits in the circuit.
+        pos_start (int): Starting index of the position register.
+        pos_len (int): Number of qubits in the position register.
+        marked_bitstring (str): Bitstring of the marked state (e.g., '101').
 
     Returns:
-
+        qiskit.circuit.Gate: Oracle gate marking the specified state.
     """
     qc = QuantumCircuit(n_total)
     # Map MSB...LSB to Qiskit's little-endian order within the block
@@ -58,8 +93,15 @@ def phase_oracle_on_register(n_total, pos_start, pos_len, marked_bitstring):
 
 
 def flipflop_shift_swap(n, coin_start, pos_start):
-    """Flip-flop shift S as a full SWAP between coin and position registers, thus
-       coupling the coin and position spaces.
+    """Implements the flip-flop shift as a SWAP between coin and position registers.
+
+    Args:
+        n (int): Number of qubits in each register.
+        coin_start (int): Starting index of the coin register.
+        pos_start (int): Starting index of the position register.
+
+    Returns:
+        qiskit.circuit.Gate: Shift operator gate.
     """
     qc = QuantumCircuit(2*n)
     for i in range(n):
@@ -68,10 +110,16 @@ def flipflop_shift_swap(n, coin_start, pos_start):
 
 
 def coined_grover_walk_search(n, marked_state, steps=None, measure=True):
-    """
-    Coined quantum walk Grover search on 2^n items.
-    Registers: [coin (n qubits)] + [pos (n qubits)]
-    Walk step: S * (C_coin ⊗ I_pos) * O_pos
+    """Builds a coined quantum walk circuit for Grover search.
+
+    Args:
+        n (int): Number of qubits in coin and position registers (total 2n).
+        marked_state (str): Bitstring of the marked state.
+        steps (int, optional): Number of walk steps. Defaults to optimal if None.
+        measure (bool, optional): Whether to add measurement operations.
+
+    Returns:
+        qiskit.QuantumCircuit: The coined Grover-walk search circuit.
     """
     N = 2**n
     n_total = 2*n
@@ -97,6 +145,17 @@ def coined_grover_walk_search(n, marked_state, steps=None, measure=True):
 
 
 def run_walk_and_get_position_counts(n, marked_state, backend=None, shots=2048):
+    """Runs the coined Grover-walk circuit and collects position register counts.
+
+    Args:
+        n (int): Number of qubits in coin and position registers (total 2n).
+        marked_state (str): Bitstring of the marked state.
+        backend (qiskit.providers.Backend, optional): Backend to run on.
+        shots (int, optional): Number of measurement shots.
+
+    Returns:
+        tuple: (QuantumCircuit, dict) The circuit and position register counts.
+    """
     if backend is None:
         backend = Aer.get_backend("qasm_simulator")
     qc = coined_grover_walk_search(n, marked_state)
@@ -105,3 +164,4 @@ def run_walk_and_get_position_counts(n, marked_state, backend=None, shots=2048):
     result = job.result()
     pos_counts = marginal_counts(result, indices=list(range(n, 2*n))).get_counts()
     return qc, pos_counts
+    

@@ -1,5 +1,5 @@
 #------------------------------------------------------------------------------
-# caesar_cipher.py
+# caesar_cipher_grover_compatible.py
 #
 # This module provides basic utilities for working with Caesar's cipher and
 # related key-recovery experiments. It includes functions for cleaning input

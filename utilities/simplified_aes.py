@@ -1,5 +1,5 @@
 #------------------------------------------------------------------------------
-# aes_sbox.py
+# simplified_aes.py
 #
 # This module provides the AES S-box and its inverse (FIPS-197 tables)
 # together with simplified helpers for encrypting and decrypting text
@@ -14,6 +14,9 @@
 #
 # These helpers allow experiments with Grover-walk search attacks on
 # AES-like substitution primitives in a simplified regime.
+#
+# © Leonardo Lavagna 2025
+# @ NESYA https://github.com/NesyaLab
 #------------------------------------------------------------------------------
 
 # AES S-box (FIPS-197, Table 4.1)

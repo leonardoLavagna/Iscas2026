@@ -142,24 +142,4 @@ def coined_grover_walk_search(n, marked_state, steps=None, measure=True):
     if measure:
         qc.measure(range(n_total), range(n_total))
     return qc
-
-
-def run_walk_and_get_position_counts(n, marked_state, backend=None, shots=2048):
-    """Runs the coined Grover-walk circuit and collects position register counts.
-
-    Args:
-        n (int): Number of qubits in coin and position registers (total 2n).
-        marked_state (str): Bitstring of the marked state.
-        backend (qiskit.providers.Backend, optional): Backend to run on.
-        shots (int, optional): Number of measurement shots.
-
-    Returns:
-        tuple: (QuantumCircuit, dict) The circuit and position register counts.
-    """
-    qc = coined_grover_walk_search(n, marked_state)
-    qc = transpile(qc, backend)
-    job = backend.run(qc, shots=shots)
-    result = job.result()
-    pos_counts = marginal_counts(result, indices=list(range(n, 2*n))).get_counts()
-    return qc, pos_counts
     

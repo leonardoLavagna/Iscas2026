@@ -193,6 +193,13 @@ def analyze_backend(backend, label, marked_key=5, steps_range=range(1, 26),
             pos = marginal_counts(result, indices=list(range(5, 10))).get_counts()
             ys.append(pos.get(format(marked_key, "05b"), 0) / shots)
         ys = np.array(ys)
+        print(f"[{label}] optimal steps = {k_opt},  max success = {p_opt:.3f}")
+        if len(peaks) >= 1:
+            print(f"[{label}] first peak at k={peaks[0][0]} with p={peaks[0][1]:.3f}")
+        if len(peaks) >= 2:
+            print(f"[{label}] second peak at k={peaks[1][0]} with p={peaks[1][1]:.3f}")
+        print(f"[{label}] estimated damping kappa ≈ {kappa}\n")
+        return xs, ys, peaks, kappa, k_opt, p_opt
     else:
         ys = sweep_success(marked_key, xs, shots, backend)
         peaks = first_two_peaks(xs, ys)

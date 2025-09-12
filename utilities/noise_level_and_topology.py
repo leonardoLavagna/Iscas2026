@@ -29,6 +29,8 @@
 # @ NESYA https://github.com/NesyaLab
 #------------------------------------------------------------------------------
 
+from qiskit_aer import AerSimulator
+from qiskit_aer.noise import NoiseModel
 from qiskit_aer.noise import depolarizing_error, ReadoutError
 from qiskit import transpile
 from qiskit.result import marginal_counts
@@ -109,7 +111,33 @@ def estimate_kappa(peaks):
     return (k2 - k1) / np.log(p1 / p2)
 
 
-def analyze_backend(backend, label, marked_key=5, steps_range=range(1, 15), shots=4096, N=26):
+def simple_noise_model(n_qubits:int,
+                       p1=1e-3, p2=5e-3, p_meas=2e-2):
+    """
+    Uniform depolarizing errors: 1q at p1, 2q at p2, and symmetric readout error p_meas.
+    """
+    nm = NoiseModel()
+    # gate errors
+    err1 = depolarizing_error(p1, 1)
+    err2 = depolarizing_error(p2, 2)
+    # add to common basis gates (adapted to transpiled basis)
+    nm.add_all_qubit_quantum_error(err1, ['u1','u2','u3','rx','ry','rz'])
+    nm.add_all_qubit_quantum_error(err2, ['cx'])
+    # readout
+    ro = ReadoutError([[1-p_meas, p_meas],[p_meas, 1-p_meas]])
+    for q in range(n_qubits):
+        nm.add_readout_error(ro, [q])
+    return nm
+
+
+def make_backend_with_noise(n_qubits:int, p1, p2, p_meas, coupling_map=None):
+    nm = simple_noise_model(n_qubits, p1, p2, p_meas)
+    return AerSimulator(noise_model=nm,
+                        basis_gates=nm.basis_gates,
+                        coupling_map=coupling_map)
+
+
+def analyze_backend(backend, label, marked_key=5, steps_range=range(1, 26), shots=1024, N=26, topology=None, initial_layout=None):
     """Analyzes Grover-walk performance on a given backend.
 
     Args:
@@ -125,17 +153,40 @@ def analyze_backend(backend, label, marked_key=5, steps_range=range(1, 15), shot
         success probabilities, detected peaks, estimated damping, optimal step, 
         and optimal success probability.
     """
-    xs = np.array(list(steps_range))
-    ys = sweep_success(marked_key, xs, shots, backend)
-    peaks = first_two_peaks(xs, ys)
-    kappa = estimate_kappa(peaks)
-    k_opt = xs[np.argmax(ys)]
-    p_opt = np.max(ys)
-    print(f"[{label}] optimal steps = {k_opt},  max success = {p_opt:.3f}")
-    if len(peaks) >= 1:
-        print(f"[{label}] first peak at k={peaks[0][0]} with p={peaks[0][1]:.3f}")
-    if len(peaks) >= 2:
-        print(f"[{label}] second peak at k={peaks[1][0]} with p={peaks[1][1]:.3f}")
-    print(f"[{label}] estimated damping kappa ≈ {kappa:.2f}\n")
-    return xs, ys, peaks, kappa, k_opt, p_opt
+    if topology:
+      xs = np.array(list(steps_range))
+      ys = []
+      for k in xs:
+          qc = coined_grover_walk_search(5, format(marked_key, "05b"), steps=k)
+          tqc = transpile(qc, backend, initial_layout=initial_layout, optimization_level=3)
+          job = backend.run(tqc, shots=shots)
+          result = job.result()
+          pos = marginal_counts(result, indices=list(range(5, 10))).get_counts()
+          ys.append(pos.get(format(marked_key, "05b"), 0) / shots)
+      ys = np.array(ys)
+      peaks = first_two_peaks(xs, ys)
+      kappa = estimate_kappa(peaks)
+      k_opt = xs[np.argmax(ys)]
+      p_opt = np.max(ys)
+      print(f"[{label}] optimal steps = {k_opt},  max success = {p_opt:.3f}")
+      if len(peaks) >= 1:
+          print(f"[{label}] first peak at k={peaks[0][0]} with p={peaks[0][1]:.3f}")
+      if len(peaks) >= 2:
+          print(f"[{label}] second peak at k={peaks[1][0]} with p={peaks[1][1]:.3f}")
+      print(f"[{label}] estimated damping kappa ≈ {kappa}\n")
+      return xs, ys, peaks, kappa, k_opt, p_opt
+    else:
+      xs = np.array(list(steps_range))
+      ys = sweep_success(marked_key, xs, shots, backend)
+      peaks = first_two_peaks(xs, ys)
+      kappa = estimate_kappa(peaks)
+      k_opt = xs[np.argmax(ys)]
+      p_opt = np.max(ys)
+      print(f"[{label}] optimal steps = {k_opt},  max success = {p_opt:.3f}")
+      if len(peaks) >= 1:
+          print(f"[{label}] first peak at k={peaks[0][0]} with p={peaks[0][1]:.3f}")
+      if len(peaks) >= 2:
+          print(f"[{label}] second peak at k={peaks[1][0]} with p={peaks[1][1]:.3f}")
+      print(f"[{label}] estimated damping kappa ≈ {kappa:.2f}\n")
+      return xs, ys, peaks, kappa, k_opt, p_opt
 

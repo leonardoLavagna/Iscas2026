@@ -12,6 +12,4 @@ backend = AerSimulator()
 fake = FakeVigoV2()
 ideal_backend = AerSimulator(method="statevector")
 noise_model = NoiseModel.from_backend(fake)
-noisy_backend = AerSimulator(noise_model=noise_model,
-                             basis_gates=noise_model.basis_gates,
-                             coupling_map=fake.configuration().coupling_map)
+noisy_backend = AerSimulator(noise_model=noise_model,basis_gates=noise_model.basis_gates)

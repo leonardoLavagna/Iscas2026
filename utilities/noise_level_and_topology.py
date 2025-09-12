@@ -32,7 +32,7 @@
 from qiskit_aer.noise import depolarizing_error, ReadoutError
 from qiskit import transpile
 from qiskit.result import marginal_counts
-from grover_walk import coined_grover_walk_search
+from utilities.grover_walk import coined_grover_walk_search
 import numpy as np
 
 

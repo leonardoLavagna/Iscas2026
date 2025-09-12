@@ -16,7 +16,7 @@
 # @ NESYA https://github.com/NesyaLab
 #------------------------------------------------------------------------------
 
-from utilities.aes_sbox import encrypt_sbox_xor, decrypt_sbox_xor
+from utilities.simplified_aes import encrypt_sbox_xor, decrypt_sbox_xor
 from collections import Counter
 
 ALPH = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"

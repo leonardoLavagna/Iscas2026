@@ -11,6 +11,9 @@
 # - depolarizing_error, ReadoutError: Qiskit Aer noise models.
 #
 # Functions included:
+# - success_prob_for_steps(marked_key, steps, shots, backend, n_key_qubits=5):
+#   Runs the walk circuit for a fixed number of steps and returns success
+#   probability.
 # - sweep_success(marked_key, steps_list, shots, backend): Computes success
 #   probability over multiple step counts.
 # - first_two_peaks(xs, ys): Finds the first two local maxima in a curve.
@@ -27,7 +30,34 @@
 #------------------------------------------------------------------------------
 
 from qiskit_aer.noise import depolarizing_error, ReadoutError
+from qiskit import transpile
+from qiskit.result import marginal_counts
+from grover_walk import coined_grover_walk_search
 import numpy as np
+
+
+def success_prob_for_steps(marked_key, steps, shots,
+                           backend, n_key_qubits= 5):
+    """Runs the Grover-walk circuit and returns success probability.
+
+    Args:
+        marked_key (int): Target key/state to be searched.
+        steps (int): Number of walk steps.
+        shots (int): Number of measurement shots.
+        backend (qiskit.providers.Backend): Backend used for simulation/execution.
+        n_key_qubits (int, optional): Number of qubits for the key register.
+            Defaults to 5.
+
+    Returns:
+        float: Success probability of measuring the marked state.
+    """
+    marked_bits = format(marked_key, f"0{n_key_qubits}b")
+    qc = coined_grover_walk_search(n_key_qubits, marked_bits, steps=steps)
+    tqc = transpile(qc, backend)
+    job = backend.run(tqc, shots=shots)
+    result = job.result()
+    pos = marginal_counts(result, indices=list(range(n_key_qubits, 2 * n_key_qubits))).get_counts()
+    return pos.get(marked_bits, 0) / shots
 
 
 def sweep_success(marked_key: int, steps_list, shots, backend):

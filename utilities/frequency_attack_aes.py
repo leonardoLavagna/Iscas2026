@@ -11,6 +11,7 @@
 # - run_attack_trials(pt, k, n_trials, threshold): run multiple trials,
 #   compute similarity vs ground truth, and track the number of trials
 #   needed to reach a given success probability threshold.
+# - plot_success_curve(results): plot success probability vs trial index.
 #
 # © Leonardo Lavagna 2025
 # @ NESYA https://github.com/NesyaLab
@@ -18,6 +19,7 @@
 
 from utilities.simplified_aes import encrypt_sbox_xor, decrypt_sbox_xor
 from collections import Counter
+import matplotlib.pyplot as plt
 
 ALPH = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 ENG_FREQ = {'E':12.702,'T':9.056,'A':8.167,'O':7.507,'I':6.966,'N':6.749,'S':6.327,'H':6.094,
@@ -101,7 +103,31 @@ def run_attack_trials(pt: str, k: int, n_trials: int=100, threshold: float=0.9):
         if out["success"]:
             successes += 1
         p_succ = successes / t
+        results[-1]["empirical_success"] = p_succ
         if steps_to_threshold is None and p_succ >= threshold:
             steps_to_threshold = t
 
     return results, steps_to_threshold
+
+def plot_success_curve(results, threshold=None):
+    """
+    Plot empirical success probability vs trial index.
+
+    Args:
+        results (list of dict): output of run_attack_trials
+        threshold (float or None): optional horizontal line for threshold
+    """
+    probs = [r["empirical_success"] for r in results]
+    xs = list(range(1, len(results)+1))
+
+    plt.figure()
+    plt.plot(xs, probs, marker='o', label="Empirical success")
+    if threshold is not None:
+        plt.axhline(threshold, color='r', linestyle='--', label=f"Threshold={threshold}")
+    plt.xlabel("Trial")
+    plt.ylabel("Success probability")
+    plt.ylim(0, 1.05)
+    plt.title("Frequency attack on AES S-box XOR")
+    plt.grid(alpha=0.3)
+    plt.legend()
+    plt.show()

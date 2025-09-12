@@ -156,8 +156,6 @@ def run_walk_and_get_position_counts(n, marked_state, backend=None, shots=2048):
     Returns:
         tuple: (QuantumCircuit, dict) The circuit and position register counts.
     """
-    if backend is None:
-        backend = Aer.get_backend("qasm_simulator")
     qc = coined_grover_walk_search(n, marked_state)
     qc = transpile(qc, backend)
     job = backend.run(qc, shots=shots)

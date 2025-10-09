@@ -1,27 +1,26 @@
-# utilities/grover_driver.py
-
 from typing import Callable, Dict, List, Tuple, Optional
 from qiskit import QuantumCircuit
 from qiskit.circuit import QuantumRegister, AncillaRegister
 from qiskit.quantum_info import Statevector
-
-# --- import your oracles / channel ---
-from oracles.aes_coherent_oracle import (
+from utilities.oracles.aes_coherent_oracle import (
     AES_SBOX,
     oracle_isolated,
     oracle_nonisolated,
     channel_unitary_identity,
     channel_unitary_tag_phase,
-    u_encrypt_Ek_xor_sbox,   # optional for tests
+    u_encrypt_Ek_xor_sbox, 
 )
+
 
 def compute_c_const(m_val: int, k_star: int) -> int:
     """c = S(m XOR k*), using the same 8-bit LSB-first convention as the module."""
     return AES_SBOX[(m_val ^ k_star) & 0xFF]
 
+
 def bitstr_lsb_first(x: int, n: int) -> str:
     """LSB-first bitstring (q[0] is least significant)."""
     return ''.join('1' if (x >> i) & 1 else '0' for i in range(n))
+
 
 def success_prob_from_state(sv: Statevector, key_reg: QuantumRegister, k_star: int) -> float:
     """
@@ -40,6 +39,7 @@ def success_prob_from_state(sv: Statevector, key_reg: QuantumRegister, k_star: i
         return float(pmap[k_star])
     raise KeyError("Could not locate key bitstring in probabilities_dict; check qubit ordering.")
 
+
 def diffusion_on_keys(qc: QuantumCircuit, key_reg: QuantumRegister):
     """Standard Grover diffusion on the key register only."""
     for q in key_reg: qc.h(q); qc.x(q)
@@ -49,10 +49,7 @@ def diffusion_on_keys(qc: QuantumCircuit, key_reg: QuantumRegister):
     qc.mcx(list(key_reg[:-1]), last)
     qc.h(last)
     for q in key_reg: qc.x(q); qc.h(q)
-
-# -------------------------------
-# Core builder
-# -------------------------------
+        
 
 def build_search_circuit(
     *,
@@ -70,40 +67,33 @@ def build_search_circuit(
     Build a full Grover circuit with pluggable isolated/non-isolated oracles.
     Returns (circuit, registers).
     """
-    # --- Registers ---
+    # Registers
     m_reg   = QuantumRegister(nbits, "m")
     k_reg   = QuantumRegister(nbits, "k")
     c_reg   = QuantumRegister(nbits, "c")
     phase   = QuantumRegister(1,      "phase")
     env_reg = QuantumRegister(n_env,  "env") if (oracle_kind == "nonisolated" and n_env > 0) else None
     anc     = AncillaRegister(max(0, n_anc), "anc") if n_anc > 0 else None
-
     regs = {"m": m_reg, "k": k_reg, "c": c_reg, "phase": phase}
     if env_reg is not None: regs["env"] = env_reg
     if anc is not None:     regs["anc"] = anc
-
-    # --- Circuit ---
+    # Circuit
     qregs = [m_reg, k_reg, c_reg, phase]
     if env_reg is not None: qregs.append(env_reg)
     if anc is not None:     qregs.append(anc)
     qc = QuantumCircuit(*qregs, name=f"Grover_{oracle_kind}")
-
     # Initialize message to |m_val>, others to |0...0>
     for i in range(nbits):
         if (m_val >> i) & 1: qc.x(m_reg[i])
-
     # Prepare key superposition (unless you want to test fixed key behavior)
     if k_init_superposition:
         for q in k_reg: qc.h(q)
-
     # Prepare phase |-> (for phase kickback)
     qc.x(phase[0]); qc.h(phase[0])
-
     # Determine target ciphertext
     if c_const is None:
         # (for evaluation you know k*, but in a real run the oracle hides it)
         raise ValueError("c_const must be provided (or compute it from (m,k*) with compute_c_const).")
-
     # Oracle selector
     if oracle_kind == "isolated":
         def apply_oracle():
@@ -122,17 +112,12 @@ def build_search_circuit(
             )
     else:
         raise ValueError("oracle_kind must be 'isolated' or 'nonisolated'")
-
-    # --- Grover iterations ---
+    # Grover iterations
     for _ in range(steps):
         apply_oracle()
         diffusion_on_keys(qc, k_reg)
-
     return qc, regs
 
-# -------------------------------
-# High-level sweep
-# -------------------------------
 
 def sweep_grover_steps(
     *,
@@ -151,7 +136,6 @@ def sweep_grover_steps(
     """
     c_const = compute_c_const(m_val, k_star)
     rows: List[Dict] = []
-
     for t in steps_range:
         qc, regs = build_search_circuit(
             m_val=m_val, nbits=nbits, steps=t, oracle_kind=oracle_kind,

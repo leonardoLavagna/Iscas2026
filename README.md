@@ -1,6 +1,6 @@
 # Iscas2026
 
-Implementations extending the [project presented at iscas 2025](https://github.com/leonardoLavagna/Iscas2025) for [Iscas 2026](https://2026.ieee-iscas.org/).
+Implementations extending the [project presented at Iscas 2025](https://github.com/leonardoLavagna/Iscas2025) for [Iscas 2026](https://2026.ieee-iscas.org/).
 
 ## What's in here?
 Here you can find the code we used in the project.

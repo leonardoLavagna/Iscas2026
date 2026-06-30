@@ -22,5 +22,32 @@ We welcome contributions to enhance the functionality and performance of the mod
 This project is licensed under the MIT License.
 
 ## Citation
-Cite this repository or one of the associated papers *soon available*...
+Cite this repository or one of the associated papers
+```
+@INPROCEEDINGS{11562366,
+  author={Lavagna, Leonardo and Vittori, Giacomo and Rosato, Antonello and Panella, Massimo},
+  booktitle={2026 IEEE International Symposium on Circuits and Systems (ISCAS)}, 
+  title={A Unified Quantum Circuit Framework for Grover Search and Quantum Walks in NISQ Cryptanalysis}, 
+  year={2026},
+  volume={},
+  number={},
+  pages={837-841},
+  keywords={Legged locomotion;Circuits;Noise;Modeling;Printing;Quantum circuit;Ciphers;Probability;Qubit;Registers},
+  doi={10.1109/ISCAS66217.2026.11562366}}
+```
+
+or 
+
+```
+@INPROCEEDINGS{11562218,
+  author={Lavagna, Leonardo and Vittori, Giacomo and Rosato, Antonello and Panella, Massimo},
+  booktitle={2026 IEEE International Symposium on Circuits and Systems (ISCAS)}, 
+  title={Additive Resource Scaling in Quantum Circuits for Search in Cryptanalysis}, 
+  year={2026},
+  volume={},
+  number={},
+  pages={2758-2762},
+  keywords={Modeling;Printing;Timing;Probability;International trade;Qubit;Registers;Algorithms;Circuits;Quantum channels},
+  doi={10.1109/ISCAS66217.2026.11562218}}
+```
 
